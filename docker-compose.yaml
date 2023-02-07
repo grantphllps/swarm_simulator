@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  sitl1:
+    image: sitl:latest
+    container_name: sitlg1
+    ports:
+      - "4201:5760"
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env1) &&
+                    /ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -I$${INSTANCE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -w --frame $${MODEL} --no-rebuild --no-mavproxy --speedup $${SPEEDUP} --add-param-file=/ardupilot/Tools/autotest/default_params/gazebo-drone1.parm"
+
+  sitl2:
+    image: sitl:latest
+    container_name: sitlg2
+    ports:
+      - "4202:5760"
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env2) &&
+                    /ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -I$${INSTANCE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -w --frame $${MODEL} --no-rebuild --no-mavproxy --speedup $${SPEEDUP} --add-param-file=/ardupilot/Tools/autotest/default_params/gazebo-drone2.parm"
+
+  sitl3:
+    image: sitl:latest
+    container_name: sitlg3
+    ports:
+      - "4203:5760"
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env3) &&
+                    /ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -I$${INSTANCE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -w --frame $${MODEL} --no-rebuild --no-mavproxy --speedup $${SPEEDUP} --add-param-file=/ardupilot/Tools/autotest/default_params/gazebo-drone3.parm"
+
+  sitl4:
+    image: sitl:latest
+    container_name: sitlg4
+    ports:
+      - "4204:5760"
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env4) &&
+                    /ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -I$${INSTANCE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -w --frame $${MODEL} --no-rebuild --no-mavproxy --speedup $${SPEEDUP} --add-param-file=/ardupilot/Tools/autotest/default_params/gazebo-drone4.parm"
+

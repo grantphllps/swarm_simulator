@@ -1,0 +1,10 @@
+INSTANCE=0
+LAT=40.847
+LON=-96.472
+ALT=14
+DIR=270
+MODEL=+
+SPEEDUP=1
+VEHICLE=ArduCopter
+FILE1=gazebo-drone1
+FILE2=gazebo-drone2
