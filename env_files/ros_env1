@@ -1,4 +1,4 @@
-PORT=tcp://172.20.0.7:5760
+PORT=tcp://172.20.1.7:5760
 BAud=
 SYS_ID=1
 COMP_ID=1
