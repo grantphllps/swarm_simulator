@@ -38,8 +38,11 @@ for i in range(1,drones + 1):
     thing_to_write = "    ports:\n"
     f.write(thing_to_write)
 
-    #Port for host<-->SITL container
+    #Port for host<-->SITL to GCS
     thing_to_write = '      - "420' + str(i) + ':5760"\n'
+    f.write(thing_to_write)
+    #Port for host<-->SITL to HRL
+    thing_to_write = '      - "410' + str(i) + ':5763"\n'
     f.write(thing_to_write)
 
     #Mount a volume with the environment variable files into the container
