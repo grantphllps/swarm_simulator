@@ -57,3 +57,15 @@ services:
                     export $$(cat /root/home/env_files/ros_env2)
                     roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
+  mavlink_router:
+    image: mavlink_router
+    container_name: mavlink_router
+    stdin_open: true
+    tty: true
+    links:
+      - sitl_2
+      - sitl_1
+      - clustering_1
+      - clustering_2
+    ports: 
+     - "6969:6969"
