@@ -15,23 +15,23 @@ f.write("version: '3'\n\n")
 f.write("services:\n")
 
 #Mavlink Router
-f.write("  mavlink_router:\n")
-f.write("    image: mavlink_router:latest\n")
-f.write("    container_name: MAVLink_router\n")
-f.write("    ports:\n")
-f.write("      - 6969:4200/udp\n")
-f.write("    links:\n")
-for i in range(1,drones+1):
-    thing_to_write = "      - sitl_" + str(i) + "\n"
-    f.write(thing_to_write)
+# f.write("  mavlink_router:\n")
+# f.write("    image: mavlink_router:latest\n")
+# f.write("    container_name: MAVLink_router\n")
+# f.write("    ports:\n")
+# f.write("      - 6969:4200/udp\n")
+# f.write("    links:\n")
+# for i in range(1,drones+1):
+#     thing_to_write = "      - sitl_" + str(i) + "\n"
+#     f.write(thing_to_write)
 
-f.write("    command: >\n")
-command_params = ""
-for i in range(1,drones + 1):
-    command_params = command_params + "sitl" + str(i) + ":5763 "
-command_string = '      /bin/bash -c " mavlink-routerd ' + command_params + '-e 0.0.0.0:4200"\n'
-f.write(command_string)
-f.write("\n")
+# f.write("    command: >\n")
+# command_params = ""
+# for i in range(1,drones + 1):
+#     command_params = command_params + "sitl" + str(i) + ":5763 "
+# command_string = '      /bin/bash -c " mavlink-routerd ' + command_params + '-e 0.0.0.0:4200"\n'
+# f.write(command_string)
+# f.write("\n")
 
 #Create a number of sitl containers
 for i in range(1,drones + 1):
@@ -79,7 +79,7 @@ for i in range(1,drones + 1):
     thing_to_write = '      /bin/bash -c "export $$(cat /root/home/env_files/env' + str(i) + ') &&\n'
     f.write(thing_to_write)
     #Command to start SITL
-    thing_to_write = '                    /ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -I$${INSTANCE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -w --frame $${MODEL} --no-rebuild --no-mavproxy --speedup $${SPEEDUP} --add-param-file=/ardupilot/Tools/autotest/default_params/gazebo-drone' + str(i) + '.parm"'
+    thing_to_write = '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild --no-mavproxy --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + str(i) + '.parm"'
     f.write(thing_to_write)
     f.write("\n\n")
     

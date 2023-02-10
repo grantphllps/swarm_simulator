@@ -1,6 +1,26 @@
 version: '3'
 
 services:
+#   mavlink_router:
+#     image: mavlink_router:latest
+#     container_name: MAVLink_router
+#     stdin_open: true
+#     tty: true
+#     environment:
+#       - SITL1=sitl1 ip
+#     depends_on:
+#       - sitl_1
+#       - sitl_2
+#     ports:
+#       - 6969:4200
+#     links:
+#       - sitl_1
+#       - sitl_2
+#     # command: > 
+#     #     /bin/bash -c "ping sitl1"
+#     # command: >
+#     #   /bin/bash -c " mavlink-routerd -t sitl1:sitl_1:5763 -t sitl_2:5763 0.0.0.0:4200"
+
   sitl_1:
     image: sitl:latest
     container_name: sitl1
@@ -27,7 +47,7 @@ services:
     command: >
       /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
                     export $$(cat /root/home/env_files/ros_env1)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl1 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl1:5760 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   sitl_2:
     image: sitl:latest
@@ -55,5 +75,5 @@ services:
     command: >
       /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
                     export $$(cat /root/home/env_files/ros_env2)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2:5760 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
