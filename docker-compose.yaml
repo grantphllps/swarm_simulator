@@ -5,13 +5,14 @@ services:
     image: sitl:latest
     container_name: sitl1
     ports:
-      - "4201:5760"
-      - "4101:5763"
+      - "4100:5760"
+      - "4102:5762"
+      - "4103:5763"
     volumes:
       - ./env_files:/root/home/env_files
     command: >
       /bin/bash -c "export $$(cat /root/home/env_files/env1) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild --no-mavproxy --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone1.parm"
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone1.parm"
 
   clustering_1:
     depends_on:
@@ -27,19 +28,21 @@ services:
     command: >
       /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
                     export $$(cat /root/home/env_files/ros_env1)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl1 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl1:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   sitl_2:
     image: sitl:latest
     container_name: sitl2
     ports:
-      - "4202:5760"
-      - "4102:5763"
+      - "4200:5760"
+      - "4202:5762"
+      - "4203:5763"
+
     volumes:
       - ./env_files:/root/home/env_files
     command: >
       /bin/bash -c "export $$(cat /root/home/env_files/env2) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild --no-mavproxy --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone2.parm"
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone2.parm"
 
   clustering_2:
     depends_on:
@@ -55,17 +58,18 @@ services:
     command: >
       /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
                     export $$(cat /root/home/env_files/ros_env2)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+    restart: unless-stopped
 
-  mavlink_router:
-    image: mavlink_router
-    container_name: mavlink_router
-    stdin_open: true
-    tty: true
-    links:
-      - sitl_2
-      - sitl_1
-      - clustering_1
-      - clustering_2
-    ports: 
-     - "6969:6969"
+  # mavlink_router:
+  #   image: mavlink_router
+  #   container_name: mavlink_router
+  #   stdin_open: true
+  #   tty: true
+  #   links:
+  #     - sitl_2
+  #     - sitl_1
+  #     - clustering_1
+  #     - clustering_2
+  #   ports: 
+  #    - "6969:6969"
