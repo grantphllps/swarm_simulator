@@ -34,9 +34,9 @@ services:
     image: sitl:latest
     container_name: sitl2
     ports:
-      - "4200:5760"
-      - "4202:5762"
-      - "4203:5763"
+      - "4200:5760" #IDK
+      - "4202:5762" #swarmplanner
+      - "4203:5763" #mavros
 
     volumes:
       - ./env_files:/root/home/env_files
@@ -61,15 +61,48 @@ services:
                     roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
     restart: unless-stopped
 
-  # mavlink_router:
-  #   image: mavlink_router
-  #   container_name: mavlink_router
-  #   stdin_open: true
-  #   tty: true
-  #   links:
-  #     - sitl_2
-  #     - sitl_1
-  #     - clustering_1
-  #     - clustering_2
-  #   ports: 
-  #    - "6969:6969"
+  sitl_3:
+    image: sitl:latest
+    container_name: sitl3
+    ports:
+      - "4300:5760" #IDK
+      - "4302:5762" #swarmplanner
+      - "4303:5763" #mavros
+
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env3) &&
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone3.parm"
+
+  clustering_3:
+    depends_on:
+      - sitl_3
+    image: clustering:latest
+    container_name: clustering_3
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./env_files:/root/home/env_files
+    links:
+      - sitl_3
+    command: >
+      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
+                    export $$(cat /root/home/env_files/ros_env3)
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl3:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+    restart: unless-stopped
+
+  mavlink_router:
+    image: mavlink_router
+    container_name: mavlink_router
+    depends_on:
+      - sitl_1
+      - sitl_2
+      - sitl_3
+    stdin_open: true
+    tty: true
+    network_mode: "host"
+    volumes:
+      - ./mavlink_router:/root/home/mavlink_router_files
+    # command: >
+    #   /bin/bash -c "/root/home/mavlink_router/mavlink-routerd -c /root/home/mavlink_router_files/main.conf"
