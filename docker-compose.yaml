@@ -104,5 +104,5 @@ services:
     network_mode: "host"
     volumes:
       - ./mavlink_router:/root/home/mavlink_router_files
-    # command: >
-    #   /bin/bash -c "/root/home/mavlink_router/mavlink-routerd -c /root/home/mavlink_router_files/main.conf"
+    command: >
+      /bin/bash -c "mavlink-routerd -c /root/home/mavlink_router_files/main.conf"
