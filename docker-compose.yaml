@@ -2,7 +2,7 @@ version: '3'
 
 services:
   sitl_1:
-    image: sitl:latest
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
     container_name: sitl1
     ports:
       - "4100:5760"
@@ -17,7 +17,7 @@ services:
   clustering_1:
     depends_on:
       - sitl_1
-    image: clustering:latest
+    image: ghcr.io/grantphllps/clustering:latest
     container_name: clustering_1
     stdin_open: true
     tty: true
@@ -31,7 +31,7 @@ services:
                     roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl1:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   sitl_2:
-    image: sitl:latest
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
     container_name: sitl2
     ports:
       - "4200:5760"
@@ -46,7 +46,7 @@ services:
   clustering_2:
     depends_on:
       - sitl_2
-    image: clustering:latest
+    image: ghcr.io/grantphllps/clustering:latest
     container_name: clustering_2
     stdin_open: true
     tty: true
@@ -60,7 +60,7 @@ services:
                     roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   sitl_3:
-    image: sitl:latest
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
     container_name: sitl3
     ports:
       - "4300:5760"
@@ -75,7 +75,7 @@ services:
   clustering_3:
     depends_on:
       - sitl_3
-    image: clustering:latest
+    image: ghcr.io/grantphllps/clustering:latest
     container_name: clustering_3
     stdin_open: true
     tty: true
@@ -89,7 +89,7 @@ services:
                     roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl3:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   sitl_4:
-    image: sitl:latest
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
     container_name: sitl4
     ports:
       - "4400:5760"
@@ -104,7 +104,7 @@ services:
   clustering_4:
     depends_on:
       - sitl_4
-    image: clustering:latest
+    image: ghcr.io/grantphllps/clustering:latest
     container_name: clustering_4
     stdin_open: true
     tty: true
@@ -118,7 +118,7 @@ services:
                     roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl4:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   mavlink_router:
-    image: mavlink_router:latest
+    image: ghcr.io/grantphllps/mavlink_router:latest
     container_name: mavlink_router
     depends_on:
       - sitl_1

@@ -118,7 +118,7 @@ for i in range(1,drones+1):
 
 #Mavlink router
 container =         "  mavlink_router:\n"
-image =             "    image: ghcr.io/grantphllps/clustering:latest\n"
+image =             "    image: ghcr.io/grantphllps/mavlink_router:latest\n"
 containerName =     "    container_name: mavlink_router\n"
 depends =           "    depends_on:\n"
 f.writelines([container,image,containerName,depends])
