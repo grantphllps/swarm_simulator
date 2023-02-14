@@ -59,7 +59,7 @@ for i in range(1,drones + 1):
 name =      "[UdpEndpoint omega]\n"
 mode =      "Mode=Normal\n"
 address =   "Address = 0.0.0.0\n"
-port =      "Port = 6969\n"
+port =      "Port = 4242\n"
 f.writelines([name,mode,address,port])
 f.close()
 
