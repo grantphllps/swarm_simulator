@@ -84,7 +84,7 @@ for i in range(1,drones+1):
     var = str(i)
 
     container =         "  sitl_" + var + ":\n"
-    image =             "    image: sitl:latest\n"
+    image =             "    image: ghcr.io/grantphllps/ardupilot_docker:latest\n"
     containerName =     "    container_name: sitl" + var + "\n"
     ports =             "    ports:\n"
     debugPort =         '      - "4' + var + '00:5760"\n'
@@ -101,7 +101,7 @@ for i in range(1,drones+1):
     container =         "  clustering_" + var + ":\n"
     depends =           "    depends_on:\n"
     depend1 =           "      - sitl_" + var + "\n"
-    image =             "    image: clustering:latest\n"
+    image =             "    image: ghcr.io/grantphllps/clustering:latest\n"
     containerName =     "    container_name: clustering_" + var + "\n"
     options1 =          "    stdin_open: true\n"
     options2 =          "    tty: true\n"
@@ -118,7 +118,7 @@ for i in range(1,drones+1):
 
 #Mavlink router
 container =         "  mavlink_router:\n"
-image =             "    image: mavlink_router:latest\n"
+image =             "    image: ghcr.io/grantphllps/clustering:latest\n"
 containerName =     "    container_name: mavlink_router\n"
 depends =           "    depends_on:\n"
 f.writelines([container,image,containerName,depends])
