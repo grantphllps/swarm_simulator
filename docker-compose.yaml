@@ -4,248 +4,59 @@ services:
   sitl_1:
     image: ghcr.io/grantphllps/ardupilot_docker:latest
     container_name: sitl1
-    ports:
-      - "4100:5760"
-      - "4102:5762"
-      - "4103:5763"
+    network_mode: host
     volumes:
       - ./env_files:/root/home/env_files
     command: >
       /bin/bash -c "export $$(cat /root/home/env_files/env1) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone1.parm"
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -f gazebo-drone1 -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -I0 --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone1.parm"
+
+  sitl_2:
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
+    container_name: sitl2
+    network_mode: host
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env2) &&
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -f gazebo-drone2 -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -I1 --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone2.parm"
 
   clustering_1:
     depends_on:
-      - sitl_1
+      - mavlink_router
+    network_mode: host
     image: ghcr.io/grantphllps/clustering:latest
     container_name: clustering_1
     stdin_open: true
     tty: true
     volumes:
       - ./env_files:/root/home/env_files
-    links:
-      - sitl_1
     command: >
       /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
                     export $$(cat /root/home/env_files/ros_env1)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl1:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_2:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl2
-    ports:
-      - "4200:5760"
-      - "4202:5762"
-      - "4203:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env2) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone2.parm"
-
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=$${PORT} tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
   clustering_2:
     depends_on:
-      - sitl_2
+      - mavlink_router
+    network_mode: host
     image: ghcr.io/grantphllps/clustering:latest
     container_name: clustering_2
     stdin_open: true
     tty: true
     volumes:
       - ./env_files:/root/home/env_files
-    links:
-      - sitl_2
     command: >
       /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
                     export $$(cat /root/home/env_files/ros_env2)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl2:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_3:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl3
-    ports:
-      - "4300:5760"
-      - "4302:5762"
-      - "4303:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env3) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone3.parm"
-
-  clustering_3:
-    depends_on:
-      - sitl_3
-    image: ghcr.io/grantphllps/clustering:latest
-    container_name: clustering_3
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./env_files:/root/home/env_files
-    links:
-      - sitl_3
-    command: >
-      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
-                    export $$(cat /root/home/env_files/ros_env3)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl3:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_4:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl4
-    ports:
-      - "4400:5760"
-      - "4402:5762"
-      - "4403:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env4) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone4.parm"
-
-  clustering_4:
-    depends_on:
-      - sitl_4
-    image: ghcr.io/grantphllps/clustering:latest
-    container_name: clustering_4
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./env_files:/root/home/env_files
-    links:
-      - sitl_4
-    command: >
-      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
-                    export $$(cat /root/home/env_files/ros_env4)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl4:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_5:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl5
-    ports:
-      - "4500:5760"
-      - "4502:5762"
-      - "4503:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env5) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone5.parm"
-
-  clustering_5:
-    depends_on:
-      - sitl_5
-    image: ghcr.io/grantphllps/clustering:latest
-    container_name: clustering_5
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./env_files:/root/home/env_files
-    links:
-      - sitl_5
-    command: >
-      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
-                    export $$(cat /root/home/env_files/ros_env5)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl5:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_6:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl6
-    ports:
-      - "4600:5760"
-      - "4602:5762"
-      - "4603:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env6) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone6.parm"
-
-  clustering_6:
-    depends_on:
-      - sitl_6
-    image: ghcr.io/grantphllps/clustering:latest
-    container_name: clustering_6
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./env_files:/root/home/env_files
-    links:
-      - sitl_6
-    command: >
-      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
-                    export $$(cat /root/home/env_files/ros_env6)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl6:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_7:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl7
-    ports:
-      - "4700:5760"
-      - "4702:5762"
-      - "4703:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env7) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone7.parm"
-
-  clustering_7:
-    depends_on:
-      - sitl_7
-    image: ghcr.io/grantphllps/clustering:latest
-    container_name: clustering_7
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./env_files:/root/home/env_files
-    links:
-      - sitl_7
-    command: >
-      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
-                    export $$(cat /root/home/env_files/ros_env7)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl7:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
-
-  sitl_8:
-    image: ghcr.io/grantphllps/ardupilot_docker:latest
-    container_name: sitl8
-    ports:
-      - "4800:5760"
-      - "4802:5762"
-      - "4803:5763"
-    volumes:
-      - ./env_files:/root/home/env_files
-    command: >
-      /bin/bash -c "export $$(cat /root/home/env_files/env8) &&
-                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone8.parm"
-
-  clustering_8:
-    depends_on:
-      - sitl_8
-    image: ghcr.io/grantphllps/clustering:latest
-    container_name: clustering_8
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./env_files:/root/home/env_files
-    links:
-      - sitl_8
-    command: >
-      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
-                    export $$(cat /root/home/env_files/ros_env8)
-                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl8:5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=$${PORT} tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
 
   mavlink_router:
     image: ghcr.io/grantphllps/mavlink_router:latest
     container_name: mavlink_router
+    stdin_open: true
     depends_on:
       - sitl_1
       - sitl_2
-      - sitl_3
-      - sitl_4
-      - sitl_5
-      - sitl_6
-      - sitl_7
-      - sitl_8
-    stdin_open: true
     tty: true
     network_mode: "host"
     volumes:
