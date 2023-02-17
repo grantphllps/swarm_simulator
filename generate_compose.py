@@ -1,6 +1,14 @@
 
 import sys
 
+#Some global variables:
+startingPort = 14541
+startingBind = 14545
+portIncrement = 10
+
+defaultCompanion = "ghcr.io/grantphllps/clustering:latest"
+
+#check that the first input is an integer
 try:
     try:
         n = int(sys.argv[1])
@@ -13,56 +21,67 @@ try:
 except IndexError:
     sys.exit("Error: Please input an integer number of dronese to simulate as first argument")
 
-print("rest of the program")
 
+#Process the rest of the arguments
+numberOfArgs = len(sys.argv)
 
-# #Get the user to input a number of drones between 1 and 12
-# badInput = True
-# while(badInput == True):
-#     print("How many drones in the swarm? (1-12): ")
-#     drones = int(input())
-#     if (drones > 0 and drones < 13):
-#         badInput = False
-#     else:
-#         print("Bad input, please enter a number between 1 and 12")
+if numberOfArgs > 2:
+    for i in range(2,numberOfArgs):
+        if (sys.argv[i][0] != "-"): #Dont parse non "-" cli arguments
+            continue
+        else:
+            match(sys.argv[i]):
+                case "-g":
+                    print("building for gazebo")
+                case "-n":
+                    print("not adding companion processes")
+                case "-d":
+                    try:
+                        print("user specified companion processes: " + sys.argv[i+1])
+                    except IndexError:
+                        sys.exit("Error: please specify a docker image")
 
-# #Generate the env_files if asked
-# #These files configure sitl
-# for i in range(1,drones + 1):
-#     filename = "./env_files/env" + str(i)
-#     f = open(filename,"w")
-#     instance =  "INSTANCE=0\n"
-#     lat =       "LAT=40.846\n"
-#     lon =       "LON=-96.47" + str(i) + "\n"
-#     alt =       "ALT=390\n"
-#     dir =       "DIR=0\n"
-#     model =     "MODEL=+\n"
-#     vehicle =   "VEHICLE=ArduCopter\n"
-#     f.writelines([instance,lat,lon,alt,dir,model,vehicle])
-#     f.close()
+#Generate the env_files if asked
+#These files configure sitl
+for i in range(1,n + 1):
+    filename = "./env_files/env" + str(i)
+    f = open(filename,"w")
+    instance =  "INSTANCE=0\n"
+    lat =       "LAT=40.846\n"
+    lon =       "LON=-96.471" + str(i) + "\n"
+    alt =       "ALT=390\n"
+    dir =       "DIR=0\n"
+    model =     "MODEL=+\n"
+    vehicle =   "VEHICLE=ArduCopter\n"
+    f.writelines([instance,lat,lon,alt,dir,model,vehicle])
+    f.close()
 
-# #Generate the ros_envs
-# #These files configure the clustering control
-# for i in range(1,drones + 1):
-#     filename = "./env_files/ros_env" + str(i)
-#     f = open(filename,"w")
-#     port =              "PORT=tcp://0.0.0.0:5760\n"             #Same across all vehicles
-#     sysId =             "SYS_ID=" + str(i) + "\n"               #Different for each vehicle
-#     compId =            "COMP_ID=2\n"                           #Same across all vehicles
-#     clusterId =         "CLUSTER_ID=1\n"                        #Same across all vehicles
-#     clusterPos =        "CLUSTER_POSITION=" + str(i) + "\n"     #Different for each vehicle
-#     clusterSize =       "CLUSTER_SIZE=" + str(drones + 1) + "\n"                        
-#     clusterRad =        "CLUSTER_RADIUS=16\n"
-#     agentAlt =          "AGENT_ALT=" + str(i * 3.0) + "\n"
-#     homeLat =           "HOME_LAT=40.8467784\n"
-#     homeLon =           "HOME_LON=-96.4719180\n"
-#     homeAlt =           "HOME_ALT=400\n"
-#     rally1Lat =         "RALLY1LAT=0\n"
-#     rally1Lon =         "RALLY1LON=30\n"
-#     rally2Lat =         "RALLY2LAT=30\n"
-#     rally2Lon =         "RALLY2LON=0\n"
-#     f.writelines([port,sysId,compId,clusterId,clusterPos,clusterSize,clusterRad,agentAlt,homeLat,homeLon,homeAlt,rally1Lat,rally1Lon,rally2Lat,rally2Lon])
-#     f.close()
+print("Ardupilot env files generated sucessuflly!")
+
+#Generate the ros_envs
+#These files configure the clustering control
+for i in range(1,n + 1):
+    filename = "./env_files/ros_env" + str(i)
+    f = open(filename,"w")
+    port =              "PORT=udp://127.0.0.1:" + str(startingPort + (i)*10) + "@" + str(startingBind + (i)*10) + "\n"             #Same across all vehicles
+    sysId =             "SYS_ID=" + str(i) + "\n"               #Different for each vehicle
+    compId =            "COMP_ID=2\n"                           #Same across all vehicles
+    clusterId =         "CLUSTER_ID=1\n"                        #Same across all vehicles
+    clusterPos =        "CLUSTER_POSITION=" + str(i) + "\n"     #Different for each vehicle
+    clusterSize =       "CLUSTER_SIZE=" + str(n) + "\n"                        
+    clusterRad =        "CLUSTER_RADIUS=16\n"
+    agentAlt =          "AGENT_ALT=" + str(i * 3.0) + "\n"
+    homeLat =           "HOME_LAT=40.8467784\n"
+    homeLon =           "HOME_LON=-96.4719180\n"
+    homeAlt =           "HOME_ALT=400\n"
+    rally1Lat =         "RALLY1LAT=0\n"
+    rally1Lon =         "RALLY1LON=30\n"
+    rally2Lat =         "RALLY2LAT=30\n"
+    rally2Lon =         "RALLY2LON=0\n"
+    f.writelines([port,sysId,compId,clusterId,clusterPos,clusterSize,clusterRad,agentAlt,homeLat,homeLon,homeAlt,rally1Lat,rally1Lon,rally2Lat,rally2Lon])
+    f.close()
+
+print("companion files generated successfully!")
 
 # #Generate the mavlink router file
 # mavlinkConfig = "./mavlink_router/main.conf"
