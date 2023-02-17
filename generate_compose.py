@@ -2,9 +2,14 @@
 import sys
 
 #Some global variables:
-startingPort = 14541
-startingBind = 14545
+startingMavrosPort = 14551
+startingMavrosBind = 14555
+startingCommsPort = 5762
 portIncrement = 10
+gazeboFlag = False
+noCompanionProcess = False
+defaultCompanionImage = "ghcr.io/grantphllps/clustering:latest"
+
 
 defaultCompanion = "ghcr.io/grantphllps/clustering:latest"
 
@@ -33,11 +38,14 @@ if numberOfArgs > 2:
             match(sys.argv[i]):
                 case "-g":
                     print("building for gazebo")
+                    gazeboFlag = True
                 case "-n":
                     print("not adding companion processes")
+                    noCompanionProcess = True
                 case "-d":
                     try:
                         print("user specified companion processes: " + sys.argv[i+1])
+                        defaultCompanionImage = sys.argv[i + 1]
                     except IndexError:
                         sys.exit("Error: please specify a docker image")
 
@@ -63,7 +71,7 @@ print("Ardupilot env files generated sucessuflly!")
 for i in range(1,n + 1):
     filename = "./env_files/ros_env" + str(i)
     f = open(filename,"w")
-    port =              "PORT=udp://127.0.0.1:" + str(startingPort + (i)*10) + "@" + str(startingBind + (i)*10) + "\n"             #Same across all vehicles
+    port =              "PORT=udp://127.0.0.1:" + str(startingMavrosPort + (i)*portIncrement) + "@" + str(startingMavrosBind + (i)*10) + "\n"             #Same across all vehicles
     sysId =             "SYS_ID=" + str(i) + "\n"               #Different for each vehicle
     compId =            "COMP_ID=2\n"                           #Same across all vehicles
     clusterId =         "CLUSTER_ID=1\n"                        #Same across all vehicles
@@ -81,97 +89,96 @@ for i in range(1,n + 1):
     f.writelines([port,sysId,compId,clusterId,clusterPos,clusterSize,clusterRad,agentAlt,homeLat,homeLon,homeAlt,rally1Lat,rally1Lon,rally2Lat,rally2Lon])
     f.close()
 
-print("companion files generated successfully!")
+print("Companion process files generated successfully!")
 
-# #Generate the mavlink router file
-# mavlinkConfig = "./mavlink_router/main.conf"
-# f = open(mavlinkConfig,"w")
-# for i in range(1,drones + 1):
-#     name =      "[TcpEndpoint sitl_" + str(i) + "]\n"
-#     address =   "Address = 0.0.0.0\n"
-#     port =      "Port = 4" + str(i) + "02\n\n"
-#     f.writelines([name,address,port])
+#Generate the mavlink router file
+mavlinkConfig = "./mavlink_router/main.conf"
+f = open(mavlinkConfig,"w")
 
-# #Add the main UPD connection
-# name =      "[UdpEndpoint omega]\n"
-# mode =      "Mode=Normal\n"
-# address =   "Address = 0.0.0.0\n"
-# port =      "Port = 4242\n"
-# f.writelines([name,mode,address,port])
-# f.close()
+name = "[TcpServer Default]\n"
+address = "Address = 0.0.0.0\n"
+port = "Port = 5759\n\n"
 
+f.writelines([name,address,port])
 
-# #"global" variables
-# debugContainerPort = "5760"
-# networkContainerPort = "5762"
-# mavrosContainerPort = "5763"
+for i in range(1,n + 1):
+    name =      "[TcpEndpoint sitl_" + str(i) + "]\n"
+    address =   "Address = 0.0.0.0\n"
+    port =      "Port = " + str(startingCommsPort + i*portIncrement) + "\n\n"
+    f.writelines([name,address,port])
 
+#Add the main UPD connection
+name =      "[UdpEndpoint omega]\n"
+mode =      "Mode=Normal\n"
+address =   "Address = 0.0.0.0\n"
+port =      "Port = 4242\n"
+f.writelines([name,mode,address,port])
+f.close()
 
-# #Initialize port lists
-# debugHostPort = ["blank"]
-# networkHostPort = ["blank"]
-# mavrosHostPort = ["blank"]
+print("Mavlink router configuration generated successfully!")
 
-# #Create a docker-compose file Header
-# f = open("./docker-compose.yaml","w")
-# f.writelines(["version: '3'\n\n","services:\n"])
+#Create a docker-compose file Header
+f = open("./docker-compose.yaml","w")
+f.writelines(["version: '3'\n\n","services:\n"])
 
-# #SITL Images:
-# for i in range(1,drones+1):
-#     var = str(i)
+#SITL Images:
+for i in range(1,n+1):
+    var = str(i)
+    #nvar = str(i-1)
 
-#     container =         "  sitl_" + var + ":\n"
-#     image =             "    image: ghcr.io/grantphllps/ardupilot_docker:latest\n"
-#     containerName =     "    container_name: sitl" + var + "\n"
-#     ports =             "    ports:\n"
-#     debugPort =         '      - "4' + var + '00:5760"\n'
-#     netwoPort =         '      - "4' + var + '02:5762"\n'
-#     mavroPort =         '      - "4' + var + '03:5763"\n'
-#     volumes =           '    volumes:\n'
-#     envVol =            '      - ./env_files:/root/home/env_files\n'
-#     command =           '    command: >\n'
-#     comman1 =           '      /bin/bash -c "export $$(cat /root/home/env_files/env' + var + ') &&\n'
-#     comman2 =           '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + var + '.parm"\n'
+    container =         "  sitl_" + var + ":\n"
+    image =             "    image: ghcr.io/grantphllps/ardupilot_docker:latest\n"
+    containerName =     "    container_name: sitl_" + var + "\n"
+    network =           "    network_mode: host\n"
+    volumes =           '    volumes:\n'
+    envVol =            '      - ./env_files:/root/home/env_files\n'
+    command =           '    command: >\n'
+    comman1 =           '      /bin/bash -c "export $$(cat /root/home/env_files/env' + var + ') &&\n'
+    if (gazeboFlag):
+        comman2 =       '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild -f gazebo-drone I' + var + ' --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + var + '.parm"\n'
+    else:
+        comman2 =       '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild -I' + var + ' --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + var + '.parm"\n'
     
-#     f.writelines([container,image,containerName,ports,debugPort,netwoPort,mavroPort,volumes,envVol,command,comman1,comman2,"\n"])
+    f.writelines([container,image,containerName,network,volumes,envVol,command,comman1,comman2,"\n"])
 
-#     container =         "  clustering_" + var + ":\n"
-#     depends =           "    depends_on:\n"
-#     depend1 =           "      - sitl_" + var + "\n"
-#     image =             "    image: ghcr.io/grantphllps/clustering:latest\n"
-#     containerName =     "    container_name: clustering_" + var + "\n"
-#     options1 =          "    stdin_open: true\n"
-#     options2 =          "    tty: true\n"
-#     volumes =           '    volumes:\n'
-#     envVol =            '      - ./env_files:/root/home/env_files\n'
-#     link =              '    links:\n'
-#     link1 =             '      - sitl_' + var + '\n'
-#     command =           '    command: >\n'
-#     comman1 =           '      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&\n'
-#     comman2 =           '                    export $$(cat /root/home/env_files/ros_env' + var +')\n'
-#     comman3 =           '                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl' + var + ':5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"\n'
+    if (noCompanionProcess == False):
+        container =         "  clustering_" + var + ":\n"
+        depends =           "    depends_on:\n"
+        depend1 =           "      - sitl_" + var + "\n"
+        depend2 =           "      - mavlink_router\n"
+        network =           "    network_mode: host\n"
+        image =             "    image: " + defaultCompanionImage + "\n"
+        containerName =     "    container_name: clustering_" + var + "\n"
+        options1 =          "    stdin_open: true\n"
+        options2 =          "    tty: true\n"
+        volumes =           '    volumes:\n'
+        envVol =            '      - ./env_files:/root/home/env_files\n'
+        command =           '    command: >\n'
+        comman1 =           '      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&\n'
+        comman2 =           '                    export $$(cat /root/home/env_files/ros_env' + var +')\n'
+        comman3 =           '                    roslaunch src/clustering_control/launch/clustering_control_sim.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl' + var + ':5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"\n'
 
-#     f.writelines([container,depends,depend1,image,containerName,options1,options2,volumes,envVol,link,link1,command,comman1,comman2,comman3,"\n"])
+        f.writelines([container,depends,depend1,depend2,network,image,containerName,options1,options2,volumes,envVol,command,comman1,comman2,comman3,"\n"])
 
-# #Mavlink router
-# container =         "  mavlink_router:\n"
-# image =             "    image: ghcr.io/grantphllps/mavlink_router:latest\n"
-# containerName =     "    container_name: mavlink_router\n"
-# depends =           "    depends_on:\n"
-# f.writelines([container,image,containerName,depends])
-# #Mavlink router depends
-# for i in range(1,drones+1):
-#     var = str(i)    
-#     depend =           "      - sitl_" + var + "\n"
-#     f.write(depend)
-# options1 =          "    stdin_open: true\n"
-# options2 =          "    tty: true\n"
-# network =           '    network_mode: "host"\n'
-# volume =            '    volumes:\n'
-# volume1 =           '      - ./mavlink_router:/root/home/mavlink_router_files\n'
-# command =           '    command: >\n'
-# command1 =          '      /bin/bash -c "mavlink-routerd -c /root/home/mavlink_router_files/main.conf"'
+#Mavlink router
+container =         "  mavlink_router:\n"
+image =             "    image: ghcr.io/grantphllps/mavlink_router:latest\n"
+containerName =     "    container_name: mavlink_router\n"
+depends =           "    depends_on:\n"
+f.writelines([container,image,containerName,depends])
+#Mavlink router depends
+for i in range(1,n+1):
+    var = str(i)    
+    depend =           "      - sitl_" + var + "\n"
+    f.write(depend)
+options1 =          "    stdin_open: true\n"
+options2 =          "    tty: true\n"
+network =           '    network_mode: "host"\n'
+volume =            '    volumes:\n'
+volume1 =           '      - ./mavlink_router:/root/home/mavlink_router_files\n'
+command =           '    command: >\n'
+command1 =          '      /bin/bash -c "mavlink-routerd -c /root/home/mavlink_router_files/main.conf"'
 
 
-# f.writelines([options1,options2,network,volume,volume1,command,command1])
-# f.close()
+f.writelines([options1,options2,network,volume,volume1,command,command1])
+f.close()
