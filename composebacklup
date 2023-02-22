@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  sitl_1:
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
+    container_name: sitl1
+    network_mode: host
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env1) &&
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -f gazebo-drone1 -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -I0 --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone1.parm"
+
+  sitl_2:
+    image: ghcr.io/grantphllps/ardupilot_docker:latest
+    container_name: sitl2
+    network_mode: host
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "export $$(cat /root/home/env_files/env2) &&
+                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -f gazebo-drone2 -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} -I1 --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone2.parm"
+
+  clustering_1:
+    depends_on:
+      - mavlink_router
+    network_mode: host
+    image: clustering:latest
+    container_name: clustering_1
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
+                    export $$(cat /root/home/env_files/ros_env1)
+                    roslaunch src/clustering_control/launch/clustering_control_sim.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=$${PORT} tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+  clustering_2:
+    depends_on:
+      - mavlink_router
+    network_mode: host
+    image: clustering:latest
+    container_name: clustering_2
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./env_files:/root/home/env_files
+    command: >
+      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&
+                    export $$(cat /root/home/env_files/ros_env2)
+                    roslaunch src/clustering_control/launch/clustering_control_sim.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=$${PORT} tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"
+
+  mavlink_router:
+    image: ghcr.io/grantphllps/mavlink_router:latest
+    container_name: mavlink_router
+    stdin_open: true
+    depends_on:
+      - sitl_1
+      - sitl_2
+    tty: true
+    network_mode: "host"
+    volumes:
+      - ./mavlink_router:/root/home/mavlink_router_files
+    command: >
+      /bin/bash -c "mavlink-routerd -c /root/home/mavlink_router_files/main.conf"

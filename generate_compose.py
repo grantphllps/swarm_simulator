@@ -1,21 +1,62 @@
-#Get the user to input a number of drones between 1 and 12
-badInput = True
-while(badInput == True):
-    print("How many drones in the swarm? (1-12): ")
-    drones = int(input())
-    if (drones > 0 and drones < 13):
-        badInput = False
-    else:
-        print("Bad input, please enter a number between 1 and 12")
+
+import sys
+
+#Some global variables:
+startingMavrosPort = 14551
+startingMavrosBind = 14555
+startingCommsPort = 5762
+portIncrement = 10
+gazeboFlag = False
+noCompanionProcess = False
+defaultCompanionImage = "ghcr.io/grantphllps/clustering:latest"
+
+
+defaultCompanion = "ghcr.io/grantphllps/clustering:latest"
+
+#check that the first input is an integer
+try:
+    try:
+        n = int(sys.argv[1])
+        if (n < 1 or n > 12):
+            sys.exit("Error: number of drones must be between 1 and 12")
+        print("Building compose for " + str(n) + " drones ...")
+    except ValueError:
+        sys.exit("Error: Please input an integer number of drones to simulate")
+
+except IndexError:
+    sys.exit("Error: Please input an integer number of dronese to simulate as first argument")
+
+
+#Process the rest of the arguments
+numberOfArgs = len(sys.argv)
+
+if numberOfArgs > 2:
+    for i in range(2,numberOfArgs):
+        if (sys.argv[i][0] != "-"): #Dont parse non "-" cli arguments
+            continue
+        else:
+            match(sys.argv[i]):
+                case "-g":
+                    print("building for gazebo")
+                    gazeboFlag = True
+                case "-n":
+                    print("not adding companion processes")
+                    noCompanionProcess = True
+                case "-d":
+                    try:
+                        print("user specified companion processes: " + sys.argv[i+1])
+                        defaultCompanionImage = sys.argv[i + 1]
+                    except IndexError:
+                        sys.exit("Error: please specify a docker image")
 
 #Generate the env_files if asked
 #These files configure sitl
-for i in range(1,drones + 1):
+for i in range(1,n + 1):
     filename = "./env_files/env" + str(i)
     f = open(filename,"w")
     instance =  "INSTANCE=0\n"
     lat =       "LAT=40.846\n"
-    lon =       "LON=-96.47" + str(i) + "\n"
+    lon =       "LON=-96.471" + str(i) + "\n"
     alt =       "ALT=390\n"
     dir =       "DIR=0\n"
     model =     "MODEL=+\n"
@@ -23,17 +64,19 @@ for i in range(1,drones + 1):
     f.writelines([instance,lat,lon,alt,dir,model,vehicle])
     f.close()
 
+print("Ardupilot env files generated sucessuflly!")
+
 #Generate the ros_envs
 #These files configure the clustering control
-for i in range(1,drones + 1):
+for i in range(1,n + 1):
     filename = "./env_files/ros_env" + str(i)
     f = open(filename,"w")
-    port =              "PORT=tcp://0.0.0.0:5760\n"             #Same across all vehicles
+    port =              "PORT=udp://127.0.0.1:" + str(startingMavrosPort + (i)*portIncrement) + "@" + str(startingMavrosBind + (i)*10) + "\n"             #Same across all vehicles
     sysId =             "SYS_ID=" + str(i) + "\n"               #Different for each vehicle
     compId =            "COMP_ID=2\n"                           #Same across all vehicles
     clusterId =         "CLUSTER_ID=1\n"                        #Same across all vehicles
     clusterPos =        "CLUSTER_POSITION=" + str(i) + "\n"     #Different for each vehicle
-    clusterSize =       "CLUSTER_SIZE=" + str(drones + 1) + "\n"                        
+    clusterSize =       "CLUSTER_SIZE=" + str(n) + "\n"                        
     clusterRad =        "CLUSTER_RADIUS=16\n"
     agentAlt =          "AGENT_ALT=" + str(i * 3.0) + "\n"
     homeLat =           "HOME_LAT=40.8467784\n"
@@ -46,13 +89,22 @@ for i in range(1,drones + 1):
     f.writelines([port,sysId,compId,clusterId,clusterPos,clusterSize,clusterRad,agentAlt,homeLat,homeLon,homeAlt,rally1Lat,rally1Lon,rally2Lat,rally2Lon])
     f.close()
 
+print("Companion process files generated successfully!")
+
 #Generate the mavlink router file
 mavlinkConfig = "./mavlink_router/main.conf"
 f = open(mavlinkConfig,"w")
-for i in range(1,drones + 1):
+
+name = "[TcpServer Default]\n"
+address = "Address = 0.0.0.0\n"
+port = "Port = 5759\n\n"
+
+f.writelines([name,address,port])
+
+for i in range(1,n + 1):
     name =      "[TcpEndpoint sitl_" + str(i) + "]\n"
     address =   "Address = 0.0.0.0\n"
-    port =      "Port = 4" + str(i) + "02\n\n"
+    port =      "Port = " + str(startingCommsPort + i*portIncrement) + "\n\n"
     f.writelines([name,address,port])
 
 #Add the main UPD connection
@@ -63,58 +115,50 @@ port =      "Port = 4242\n"
 f.writelines([name,mode,address,port])
 f.close()
 
-
-#"global" variables
-debugContainerPort = "5760"
-networkContainerPort = "5762"
-mavrosContainerPort = "5763"
-
-
-#Initialize port lists
-debugHostPort = ["blank"]
-networkHostPort = ["blank"]
-mavrosHostPort = ["blank"]
+print("Mavlink router configuration generated successfully!")
 
 #Create a docker-compose file Header
 f = open("./docker-compose.yaml","w")
 f.writelines(["version: '3'\n\n","services:\n"])
 
 #SITL Images:
-for i in range(1,drones+1):
+for i in range(1,n+1):
     var = str(i)
+    #nvar = str(i-1)
 
     container =         "  sitl_" + var + ":\n"
     image =             "    image: ghcr.io/grantphllps/ardupilot_docker:latest\n"
-    containerName =     "    container_name: sitl" + var + "\n"
-    ports =             "    ports:\n"
-    debugPort =         '      - "4' + var + '00:5760"\n'
-    netwoPort =         '      - "4' + var + '02:5762"\n'
-    mavroPort =         '      - "4' + var + '03:5763"\n'
+    containerName =     "    container_name: sitl_" + var + "\n"
+    network =           "    network_mode: host\n"
     volumes =           '    volumes:\n'
     envVol =            '      - ./env_files:/root/home/env_files\n'
     command =           '    command: >\n'
     comman1 =           '      /bin/bash -c "export $$(cat /root/home/env_files/env' + var + ') &&\n'
-    comman2 =           '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR}  --no-rebuild --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + var + '.parm"\n'
+    if (gazeboFlag):
+        comman2 =       '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild -f gazebo-drone' + var +' -I' + var + ' --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + var + '.parm"\n'
+    else:
+        comman2 =       '                    /home/ardupilot/Tools/autotest/sim_vehicle.py --vehicle $${VEHICLE} -w --custom-location=$${LAT},$${LON},$${ALT},$${DIR} --no-rebuild -I' + var + ' --add-param-file=/home/ardupilot/Tools/autotest/default_params/gazebo-drone' + var + '.parm"\n'
     
-    f.writelines([container,image,containerName,ports,debugPort,netwoPort,mavroPort,volumes,envVol,command,comman1,comman2,"\n"])
+    f.writelines([container,image,containerName,network,volumes,envVol,command,comman1,comman2,"\n"])
 
-    container =         "  clustering_" + var + ":\n"
-    depends =           "    depends_on:\n"
-    depend1 =           "      - sitl_" + var + "\n"
-    image =             "    image: ghcr.io/grantphllps/clustering:latest\n"
-    containerName =     "    container_name: clustering_" + var + "\n"
-    options1 =          "    stdin_open: true\n"
-    options2 =          "    tty: true\n"
-    volumes =           '    volumes:\n'
-    envVol =            '      - ./env_files:/root/home/env_files\n'
-    link =              '    links:\n'
-    link1 =             '      - sitl_' + var + '\n'
-    command =           '    command: >\n'
-    comman1 =           '      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&\n'
-    comman2 =           '                    export $$(cat /root/home/env_files/ros_env' + var +')\n'
-    comman3 =           '                    roslaunch src/clustering_control/launch/clustering_control_container.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=tcp://sitl' + var + ':5763 tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"\n'
+    if (noCompanionProcess == False):
+        container =         "  clustering_" + var + ":\n"
+        depends =           "    depends_on:\n"
+        depend1 =           "      - sitl_" + var + "\n"
+        depend2 =           "      - mavlink_router\n"
+        network =           "    network_mode: host\n"
+        image =             "    image: " + defaultCompanionImage + "\n"
+        containerName =     "    container_name: clustering_" + var + "\n"
+        options1 =          "    stdin_open: true\n"
+        options2 =          "    tty: true\n"
+        volumes =           '    volumes:\n'
+        envVol =            '      - ./env_files:/root/home/env_files\n'
+        command =           '    command: >\n'
+        comman1 =           '      /bin/bash -c "source /home/catkin_ws/devel/setup.bash &&\n'
+        comman2 =           '                    export $$(cat /root/home/env_files/ros_env' + var +')\n'
+        comman3 =           '                    roslaunch src/clustering_control/launch/clustering_control_sim.launch system_ID:=$${SYS_ID} clusterID:=$${CLUSTER_ID} clusterPosition:=$${CLUSTER_POSITION} clusterSize:=$${CLUSTER_SIZE} clusterRadius:=$${CLUSTER_RADIUS} agentAlt:=$${AGENT_ALT} homeLat:=$${HOME_LAT} homeLon:=$${HOME_LON} homeAlt:=$${HOME_ALT} rally1Lat:=$${RALLY1LAT} rally1Lon:=$${RALLY1LON} rally2Lat:=$${RALLY2LAT} rally2Lon:=$${RALLY2LON} fcu_url:=$${PORT} tgt_system:=$${SYS_ID} tgt_component:=$${COMP_ID}"\n'
 
-    f.writelines([container,depends,depend1,image,containerName,options1,options2,volumes,envVol,link,link1,command,comman1,comman2,comman3,"\n"])
+        f.writelines([container,depends,depend1,depend2,network,image,containerName,options1,options2,volumes,envVol,command,comman1,comman2,comman3,"\n"])
 
 #Mavlink router
 container =         "  mavlink_router:\n"
@@ -123,7 +167,7 @@ containerName =     "    container_name: mavlink_router\n"
 depends =           "    depends_on:\n"
 f.writelines([container,image,containerName,depends])
 #Mavlink router depends
-for i in range(1,drones+1):
+for i in range(1,n+1):
     var = str(i)    
     depend =           "      - sitl_" + var + "\n"
     f.write(depend)
@@ -137,4 +181,103 @@ command1 =          '      /bin/bash -c "mavlink-routerd -c /root/home/mavlink_r
 
 
 f.writelines([options1,options2,network,volume,volume1,command,command1])
+f.close()
+
+##Generate Gazebo world
+f = open("/home/gphillip/catkin_ws/src/iq_sim/worlds/multi_drone.world","w")
+#generate the 'base' world first
+f.writelines([
+'<?xml version="1.0"?>\n',
+'<sdf version="1.5">\n',
+'  <world name="default">\n',
+'    <physics type="ode">\n',
+'      <ode>\n',
+'        <solver>\n',
+'          <type>quick</type>\n',
+'          <iters>100</iters>\n',
+'          <sor>1.0</sor>\n',
+'        </solver>\n',
+'        <constraints>\n',
+'          <cfm>0.0</cfm>\n',
+'          <erp>0.9</erp>\n',
+'          <contact_max_correcting_vel>0.1</contact_max_correcting_vel>\n',
+'          <contact_surface_layer>0.0</contact_surface_layer>\n',
+'        </constraints>\n',
+'      </ode>\n',
+'      <real_time_update_rate>-1</real_time_update_rate>\n',
+'    </physics>\n\n',
+
+'    <model name="ground_plane">\n',
+'      <static>true</static>\n',
+'      <link name="link">\n',
+'        <collision name="collision">\n',
+"          <geometry>\n",
+"            <plane>\n",
+"              <normal>0 0 1</normal>\n",
+"              <size>5000 5000</size>\n",
+"            </plane>\n",
+"          </geometry>\n",
+"          <surface>\n",
+"            <friction>\n",
+"              <ode>\n",
+"                <mu>1</mu>\n",
+"                <mu2>1</mu2>\n",
+"              </ode>\n",
+"            </friction>\n",
+"          </surface>\n",
+"        </collision>\n",
+'        <visual name="runway">\n',
+"          <pose>000 0 0.005 0 0 0</pose>\n",
+"          <cast_shadows>false</cast_shadows>\n",
+"          <geometry>\n",
+"            <plane>\n",
+"              <normal>0 0 1</normal>\n",
+"              <size>1829 45</size>\n",
+"            </plane>\n",
+"          </geometry>\n",
+"          <material>\n",
+"            <script>\n",
+"              <uri>file://media/materials/scripts/gazebo.material</uri>\n",
+"              <name>Gazebo/Runway</name>\n",
+"            </script>\n",
+"          </material>\n",
+"        </visual>\n\n",
+
+'        <visual name="grass">\n',
+"          <pose>0 0 -0.1 0 0 0</pose>\n",
+"          <cast_shadows>false</cast_shadows>\n",
+"          <geometry>\n",
+"            <plane>\n",
+"              <normal>0 0 1</normal>\n",
+"              <size>5000 5000</size>\n",
+"            </plane>\n",
+"          </geometry>\n",
+"          <material>\n",
+"            <script>\n",
+"              <uri>file://media/materials/scripts/gazebo.material</uri>\n",
+"              <name>Gazebo/Grass</name>\n",
+"            </script>\n",
+"          </material>\n",
+"        </visual>\n\n",
+
+"      </link>\n",
+"    </model>\n\n",
+
+"    <include>\n",
+"      <uri>model://sun</uri>\n",
+"    </include>\n",
+])
+
+#Now add the correct number of drones
+for i in range(1,n+1):
+    var = str(i)
+    line1 = '    <model name="drone' + var + '">\n'
+    line2 = '      <pose> 0 ' + var +' 0 0 0 0</pose>\n'
+    line3 = '      <include>\n'
+    line4 = '        <uri>model://drone' + var + '</uri>\n'
+    line5 = '      </include>\n'
+    line6 = '    </model>\n'
+    f.writelines([line1,line2,line3,line4,line5,line6])
+
+f.writelines(["\n","  </world>\n","</sdf>"])
 f.close()

@@ -1,18 +1,10 @@
-[TcpServer Default]
-Address = 0.0.0.0
-Port = 5759
-
 [TcpEndpoint sitl_1]
 Address = 0.0.0.0
-Port = 5772
+Port = 5762
 
 [TcpEndpoint sitl_2]
 Address = 0.0.0.0
-Port = 5782
-
-[TcpEndpoint sitl_3]
-Address = 0.0.0.0
-Port = 5792
+Port = 5772
 
 [UdpEndpoint omega]
 Mode=Normal
